@@ -1,2 +1,18 @@
 _xpro
 _X_Pros/
+
+# Virtual Environment
+.venv/
+env/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# macOS
+.DS_Store
+

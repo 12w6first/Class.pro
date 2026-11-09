@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Live Monitor Assistant | FOH & Stage Console</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="stage-dark">
+    <!-- Top Bar -->
+    <header class="top-nav">
+        <div class="brand">
+            <div class="sound-wave-icon">
+                <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div class="brand-text">
+                <h1>AI LIVE MONITOR ASSISTANT</h1>
+                <span class="subtitle">Acoustic & Stage Communication Intelligence • Class.pro</span>
+            </div>
+        </div>
+
+        <div class="header-status">
+            <div class="status-indicator">
+                <span class="pulse-dot" id="ws-indicator"></span>
+                <span id="ws-status-text">Łączenie...</span>
+            </div>
+            <div class="clock" id="digital-clock">--:--:--</div>
+        </div>
+
+        <div class="header-actions">
+            <button id="btn-open-routing" class="btn btn-secondary" title="Konfiguracja wejść audio i krosownica">
+                <span class="icon">🎚️</span>
+                <span>Krosownica wejść (Routing)</span>
+            </button>
+            <button id="btn-toggle-mic" class="btn btn-mic" title="Wypowiedz prośbę przez mikrofon MacBooka">
+                <span class="mic-icon">🎙️</span>
+                <span id="mic-text">Mikrofon na żywo</span>
+            </button>
+            <button id="btn-clear-all" class="btn btn-secondary">Wyczyść pulpit</button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="dashboard-grid">
+        <!-- Left: Stage Channels (Kafelki muzyków) -->
+        <section class="stage-section">
+            <!-- Live Microphone Audio Banner -->
+            <div class="live-mic-banner" id="live-mic-banner">
+                <div class="mic-banner-row">
+                    <div class="mic-banner-left">
+                        <button id="btn-master-mic" class="btn btn-mic-master">
+                            <span class="mic-dot" id="master-mic-dot"></span>
+                            <span id="master-mic-text">🎙️ ROZPOCZNIJ CIĄGŁY NASŁUCH MIKROFONU (INPUT 1)</span>
+                        </button>
+                        <div class="mic-target-info">
+                            Podpięty kanał: <strong id="active-mic-channel-label">CH 01 (Wokal Główny)</strong>
+                        </div>
+                    </div>
+                    <div class="mic-banner-meter">
+                        <span class="meter-label">SYGNAŁ INPUT 1:</span>
+                        <div class="live-vu-meter-bar">
+                            <div class="live-vu-fill" id="live-vu-fill"></div>
+                        </div>
+                        <span class="meter-db" id="live-vu-db">OFF</span>
+                    </div>
+                </div>
+                <div class="mic-live-transcript-box">
+                    <span class="pulse-icon">💬</span>
+                    <span class="transcript-label">Mowa na żywo z wejścia 1:</span>
+                    <span class="transcript-content" id="live-transcription-preview">Kliknij przycisk powyżej i powiedz coś do mikrofonu MacBooka...</span>
+                </div>
+                <div class="mic-error-hint hidden" id="mic-error-hint"></div>
+            </div>
+
+            <div class="section-header">
+                <h2>KANAŁY SCENICZNE & ODSŁUCHY</h2>
+                <span class="badge" id="active-channels-count">6 KANAŁÓW AKTYWNYCH</span>
+            </div>
+            <div class="channels-grid" id="channels-container">
+                <!-- Generowane dynamicznie przez JS -->
+            </div>
+
+            <!-- Quick Preset Simulations -->
+            <div class="presets-card">
+                <div class="presets-header">
+                    <h3>SZYBKA SYMULACJA SCENICZNA (TEST NA ŻYWO)</h3>
+                    <span class="badge-tag">Demo 1-Click</span>
+                </div>
+                <p class="presets-desc">Kliknij, aby zasymulować realistyczne zgłoszenie muzyka ze sceny:</p>
+                <div class="presets-buttons" id="presets-container">
+                    <!-- Przyciski presetów -->
+                </div>
+
+                <!-- Custom input -->
+                <form id="custom-test-form" class="custom-input-bar">
+                    <select id="custom-channel-select" class="select-input">
+                        <!-- Opcje kanałów -->
+                    </select>
+                    <input type="text" id="custom-text-input" placeholder="Wpisz własną prośbę muzyka (np. 'daj mi więcej werbla w lewym uchu')..." required>
+                    <button type="submit" class="btn btn-primary">Wyślij na mikser</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Right: Action Feed / Live Intent Log -->
+        <section class="feed-section">
+            <div class="section-header">
+                <h2>DZIENNIK ZGŁOSZEŃ & INTENCJI AI</h2>
+                <div class="feed-filters">
+                    <button class="filter-pill active" data-filter="all">Wszystkie</button>
+                    <button class="filter-pill" data-filter="pending">Do zrobienia</button>
+                    <button class="filter-pill" data-filter="urgent">⚠️ Pilne</button>
+                    <button class="filter-pill" data-filter="resolved">Załatwione</button>
+                </div>
+            </div>
+
+            <div class="feed-stream" id="messages-container">
+                <div class="empty-feed" id="empty-state">
+                    <div class="radar-scan"></div>
+                    <p>Oczekiwanie na sygnał ze sceny...</p>
+                    <small>Nasłuchiwanie kanałów talkback i odsłuchów</small>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Routing Modal (Krosownica wejść audio) -->
+    <div id="routing-modal" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <h2>🎚️ Krosownica Wejść Audio (Stage Patchbay / Routing)</h2>
+                    <p class="modal-subtitle">Przypisz fizyczne tory z miksera cyfrowego (USB/Dante/CoreAudio) do poszczególnych muzyków.</p>
+                </div>
+                <button id="btn-close-modal" class="btn-icon">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Urządzenie Audio -->
+                <div class="config-row">
+                    <label for="device-select"><strong>Główne urządzenie wejściowe (Interfejs / Mikser):</strong></label>
+                    <select id="device-select" class="select-input select-full">
+                        <!-- Generowane dynamicznie -->
+                    </select>
+                </div>
+
+                <div class="routing-table-wrapper">
+                    <table class="routing-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 70px;">ID</th>
+                                <th>Wykonawca / Muzyk</th>
+                                <th>Rola na scenie</th>
+                                <th style="width: 220px;">Fizyczne Wejście miksera</th>
+                                <th style="width: 80px;">Kolor</th>
+                                <th style="width: 50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="routing-rows-container">
+                            <!-- Wiersze generowane dynamicznie -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <button id="btn-add-channel" class="btn btn-secondary btn-sm" style="margin-top: 12px;">
+                    + Dodaj kolejnego muzyka / kanał
+                </button>
+            </div>
+
+            <div class="modal-footer">
+                <button id="btn-cancel-routing" class="btn btn-secondary">Anuluj</button>
+                <button id="btn-save-routing" class="btn btn-primary">Zapisz krosownicę (Routing)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Info -->
+    <footer class="footer-bar">
+        <div class="footer-left">
+            <span>Student: <strong>12w6tk1</strong> (Technologie Komputerowe UAM)</span>
+            <span>Przedmiot: <strong>Wprowadzenie do sztucznej inteligencji</strong></span>
+        </div>
+        <div class="footer-right">
+            <span>Silnik: <strong>Hybrid Acoustic Agent (STT + Intent LLM/NLP)</strong></span>
+            <span>Architektura: <strong>Agent-First Real-Time Hub</strong></span>
+        </div>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
