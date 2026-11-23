@@ -77,8 +77,9 @@ class AudioEngine:
 
     def detect_audio_devices(self) -> List[AudioDeviceItem]:
         """
-        Wykrywa urządzenia audio w systemie macOS (CoreAudio)
+        Wykrywa urządzenia audio wejściowe w systemie macOS (CoreAudio)
         oraz dodaje standardowe interfejsy mikserów koncertowych.
+        Zawsze zwraca co najmniej mikrofon MacBooka oraz popularne interfejsy cyfrowe.
         """
         devices: List[AudioDeviceItem] = []
 
@@ -87,50 +88,59 @@ class AudioEngine:
                 ["system_profiler", "SPAudioDataType"],
                 capture_output=True,
                 text=True,
-                timeout=3
+                timeout=5
             )
             output = res.stdout
 
-            # Parse device sections
-            # Każde urządzenie ma wcięcie i nazwę z dwukropkiem, np. "Mikrofon (MacBook Pro):"
-            matches = re.findall(r"^\s{8}([A-Za-z0-9_(). -]+):\s*$", output, re.MULTILINE)
-            for name in matches:
-                name_clean = name.strip()
-                if "output" in name_clean.lower() and "input" not in name_clean.lower():
+            # Parsuj bloki urządzeń – każde ma wcięcie 8 spacji i dwukropek
+            device_blocks = re.split(r"\n(?=\s{8}\S)", output)
+            for block in device_blocks:
+                name_match = re.match(r"\s{8}([^\n:]+):", block)
+                if not name_match:
+                    continue
+                name_clean = name_match.group(1).strip()
+
+                # Pomiń czysto wyjściowe (output-only) urządzenia
+                if re.search(r"\boutput\b", name_clean, re.IGNORECASE) and \
+                   not re.search(r"\binput\b", name_clean, re.IGNORECASE):
                     continue
 
-                # Sprawdź czy to urządzenie wejściowe
-                # Znajdź blok urządzenia
-                block_match = re.search(re.escape(name) + r":(.*?)(?=\n\s{8}[A-Za-z0-9]|\Z)", output, re.DOTALL)
-                if block_match:
-                    block_text = block_match.group(1)
-                    in_channels_match = re.search(r"Input Channels:\s*(\d+)", block_text)
-                    is_default = "Default Input Device: Yes" in block_text
+                in_ch_match = re.search(r"Input Channels:\s*(\d+)", block)
+                is_default = "Default Input Device: Yes" in block
 
-                    if in_channels_match:
-                        channels_count = int(in_channels_match.group(1))
-                        devices.append(AudioDeviceItem(
-                            name=name_clean,
-                            channels=channels_count,
-                            is_default=is_default
-                        ))
+                if in_ch_match:
+                    ch_count = int(in_ch_match.group(1))
+                    devices.append(AudioDeviceItem(
+                        name=name_clean,
+                        channels=ch_count,
+                        is_default=is_default
+                    ))
         except Exception as e:
             print(f"[Device Detection Warning] {e}")
 
-        # Jeśli nie wykryto nic lub do testów scenicznych, dodaj popularne interfejsy cyfrowych konsolet
-        known_virtual = [
+        # Zawsze dodaj mikrofon wbudowany MacBooka jeśli nie wykryto
+        macbook_mic_names = {"MacBook", "Built-in", "Wbudowany", "Mikrofon (MacBook"}
+        has_builtin = any(any(k in d.name for k in macbook_mic_names) for d in devices)
+        if not has_builtin:
+            devices.insert(0, AudioDeviceItem(
+                name="Mikrofon wbudowany (MacBook Pro)",
+                channels=1,
+                is_default=len(devices) == 0
+            ))
+
+        # Popularne interfejsy cyfrowych konsolet koncertowych
+        known_stage = [
+            AudioDeviceItem(name="Midas MR18 / XR18 USB Audio (18 ch)", channels=18, is_default=False),
             AudioDeviceItem(name="USB Audio CODEC (Behringer X32 / Midas M32 - 32ch)", channels=32, is_default=False),
             AudioDeviceItem(name="Dante Virtual Soundcard (64ch)", channels=64, is_default=False),
             AudioDeviceItem(name="Allen & Heath USB Audio (SQ / Qu - 32ch)", channels=32, is_default=False),
+            AudioDeviceItem(name="Focusrite Scarlett USB Audio (2ch)", channels=2, is_default=False),
+            AudioDeviceItem(name="PreSonus StudioLive USB Audio (32ch)", channels=32, is_default=False),
         ]
-
         existing_names = {d.name for d in devices}
-        for kv in known_virtual:
+        for kv in known_stage:
             if kv.name not in existing_names:
                 devices.append(kv)
-
-        if not devices:
-            devices.append(AudioDeviceItem(name="Mikrofon (MacBook Pro)", channels=1, is_default=True))
 
         return devices
 

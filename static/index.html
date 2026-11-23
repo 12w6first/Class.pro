@@ -31,6 +31,10 @@
         </div>
 
         <div class="header-actions">
+            <button id="btn-open-tablet-modal" class="btn btn-secondary" title="Podgląd dla tabletu lub telefonu">
+                <span class="icon">📱</span>
+                <span>Widok Tabletu (/tablet)</span>
+            </button>
             <button id="btn-open-routing" class="btn btn-secondary" title="Konfiguracja wejść audio i krosownica">
                 <span class="icon">🎚️</span>
                 <span>Krosownica wejść (Routing)</span>
@@ -75,12 +79,31 @@
                 <div class="mic-error-hint hidden" id="mic-error-hint"></div>
             </div>
 
+            <!-- Mixer Selection Bar (Midas MR18 / USB Audio Interface) -->
+            <div class="mixer-select-toolbar">
+                <div class="mixer-select-info">
+                    <span class="mixer-icon">🎛️</span>
+                    <div class="mixer-text">
+                        <strong>KARTA DŹWIĘKOWA / MIKSER USB:</strong>
+                        <span class="mixer-subtext">Wybierz Midas MR18 podłączony po USB, aby zarządzać jego wejściami</span>
+                    </div>
+                </div>
+                <div class="mixer-controls">
+                    <select id="direct-device-select" class="select-input select-mixer">
+                        <!-- Generowane dynamicznie przez JS -->
+                    </select>
+                    <button id="btn-quick-patchbay" class="btn btn-primary btn-sm">
+                        🎚️ Krosownica wejść Midas (1-18)
+                    </button>
+                </div>
+            </div>
+
             <div class="section-header">
-                <h2>KANAŁY SCENICZNE & ODSŁUCHY</h2>
+                <h2>TOR SCENICZNY • INSTRUMENT POD INSTRUMENTEM (SZEROKI PODGLĄD)</h2>
                 <span class="badge" id="active-channels-count">6 KANAŁÓW AKTYWNYCH</span>
             </div>
-            <div class="channels-grid" id="channels-container">
-                <!-- Generowane dynamicznie przez JS -->
+            <div class="channels-list-wide" id="channels-container">
+                <!-- Generowane dynamicznie przez JS: Szerokie pasy instrument pod instrumentem -->
             </div>
 
             <!-- Quick Preset Simulations -->
@@ -173,6 +196,40 @@
             <div class="modal-footer">
                 <button id="btn-cancel-routing" class="btn btn-secondary">Anuluj</button>
                 <button id="btn-save-routing" class="btn btn-primary">Zapisz krosownicę (Routing)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tablet Remote View Modal -->
+    <div id="tablet-modal" class="modal-backdrop hidden">
+        <div class="modal-card" style="max-width: 550px;">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <h2>📱 Zdalny Podgląd (Tablet / Telefon)</h2>
+                    <p class="modal-subtitle">Widok dedykowany do podglądania sceny i odznaczania zrobionych próśb.</p>
+                </div>
+                <button id="btn-close-tablet-modal" class="btn-icon">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 24px;">
+                <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 0.9rem;">
+                    Na urządzeniu w tej samej sieci Wi-Fi otwórz w przeglądarce adres:
+                </p>
+                <div style="background: #090c10; border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;">
+                    <a id="tablet-url-link" href="/tablet" target="_blank" style="color: var(--accent-blue); font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; text-decoration: none;">
+                        http://...:8000/tablet
+                    </a>
+                </div>
+                <div style="margin: 0 auto 16px; width: 180px; height: 180px; background: #fff; padding: 10px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                    <img id="tablet-qr-img" src="" alt="QR Kod" style="width: 100%; height: 100%; object-fit: contain;">
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
+                    💡 Zeskanuj aparat telefonu lub wpisz link powyżej. Na tablecie nie ma konfiguracji ani mikrofonu – służy wyłącznie do szybkiego podglądu i odznaczania zadań.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <a id="tablet-open-btn" href="/tablet" target="_blank" class="btn btn-primary" style="text-decoration:none;">
+                    Otwórz podgląd w nowej karcie
+                </a>
             </div>
         </div>
     </div>

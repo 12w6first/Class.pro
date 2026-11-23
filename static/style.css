@@ -1027,3 +1027,381 @@ body.stage-dark {
     color: #fff;
     border-color: #3b82f6;
 }
+
+/* ==================== Columnar Log & Red Sound/Instrument Highlights ==================== */
+.highlight-audio-red {
+    color: #ff3838 !important;
+    background: rgba(239, 68, 68, 0.16) !important;
+    font-weight: 800 !important;
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    text-shadow: 0 0 10px rgba(255, 56, 56, 0.45);
+    display: inline-block;
+    margin: 0 1px;
+}
+
+.sound-alert-card {
+    border-left: 6px solid #ef4444 !important;
+    border-color: rgba(239, 68, 68, 0.35) !important;
+    background: #171317 !important;
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.18) !important;
+}
+
+.badge-sound-red {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    font-size: 0.72rem;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Columnar card layout (kolumna pod kolumną) */
+.columnar-msg {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.columnar-msg:hover {
+    border-color: #3b485d;
+    background: var(--bg-card-hover);
+}
+
+.columnar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 8px;
+}
+
+.col-musician {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.musician-circle {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.musician-name {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.ch-badge {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    background: #1e2634;
+    color: var(--accent-blue);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.col-badges {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.col-time {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.columnar-speech-box {
+    display: flex;
+    gap: 10px;
+    background: #090c10;
+    border: 1px solid #1a2230;
+    border-radius: 6px;
+    padding: 10px 14px;
+    line-height: 1.5;
+}
+
+.speech-quote-mark {
+    font-family: serif;
+    font-size: 1.6rem;
+    color: var(--text-muted);
+    line-height: 0.8;
+}
+
+.speech-text {
+    font-size: 0.92rem;
+    color: #f1f5f9;
+    flex: 1;
+}
+
+.columnar-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 4px;
+}
+
+.col-intent {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.intent-summary-text {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.col-action {
+    display: flex;
+    align-items: center;
+}
+
+/* ==================== Wide Channel Strips (Instrument pod instrumentem szeroko) ==================== */
+.mixer-select-toolbar {
+    background: #111722;
+    border: 1px solid #233146;
+    border-radius: 8px;
+    padding: 12px 18px;
+    margin-bottom: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.mixer-select-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mixer-icon {
+    font-size: 1.5rem;
+}
+
+.mixer-text strong {
+    font-size: 0.85rem;
+    font-family: var(--font-mono);
+    color: var(--accent-blue);
+    display: block;
+}
+
+.mixer-subtext {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.mixer-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.select-mixer {
+    min-width: 280px;
+    background: #090c12;
+    border-color: #2b3a50;
+    font-weight: 600;
+    color: #fff;
+}
+
+/* Wide Channels Layout */
+.channels-list-wide {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.channel-strip-wide {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 14px 20px;
+    display: grid;
+    grid-template-columns: 210px 170px 130px 1fr 180px;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.2s ease;
+    border-left: 5px solid #3b82f6;
+}
+
+.channel-strip-wide:hover {
+    background: var(--bg-card-hover);
+    border-color: #3b485d;
+}
+
+.channel-strip-wide.has-alert {
+    border-color: var(--accent-orange);
+    background: #1c1712;
+}
+
+.channel-strip-wide.has-urgent {
+    border-color: var(--accent-red);
+    background: #201316;
+    animation: urgent-border 1.5s infinite;
+}
+
+/* Identity column */
+.strip-col-identity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.strip-ch-id {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    line-height: 1;
+}
+
+.strip-instrument-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.2;
+}
+
+.strip-role-title {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+/* Routing column */
+.strip-col-routing {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.routing-label {
+    font-size: 0.68rem;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+}
+
+.strip-hw-badge {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 700;
+    background: #090c12;
+    border: 1px solid #233146;
+    color: var(--accent-blue);
+    padding: 5px 9px;
+    border-radius: 5px;
+    white-space: nowrap;
+}
+
+/* Meter column */
+.strip-col-meters {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.meter-title {
+    font-size: 0.68rem;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+}
+
+.strip-meter-bar {
+    display: flex;
+    gap: 3px;
+    height: 12px;
+    background: #090c10;
+    padding: 2px;
+    border-radius: 4px;
+    border: 1px solid #1a2230;
+}
+
+/* Status column */
+.strip-col-status {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.status-label {
+    font-size: 0.68rem;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+}
+
+.strip-status-box {
+    background: #0b0e14;
+    border: 1px solid #1c2534;
+    border-left: 3px solid #3b82f6;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 0.92rem;
+    color: #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Actions column */
+.strip-col-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.btn-strip-talk {
+    background: #192230;
+    border: 1px solid #2b394d;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    width: 100%;
+    text-align: center;
+}
+
+.btn-strip-talk:hover, .btn-strip-talk.selected-mic {
+    background: #2563eb;
+    color: #fff;
+    border-color: #3b82f6;
+}
+
+@media (max-width: 1200px) {
+    .channel-strip-wide {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+}

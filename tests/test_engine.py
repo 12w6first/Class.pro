@@ -46,10 +46,26 @@ async def test_audio_engine():
     assert len(devices) > 0
     print(f"✓ Test 5: Wykryto {len(devices)} urządzeń audio (PASS)")
 
+async def test_api_endpoints():
+    from src.server import get_tablet, get_info
+
+    # Test get_tablet()
+    res_tab = await get_tablet()
+    assert res_tab.path == "static/tablet.html"
+    print("✓ Test 6: Endpoint /tablet serwuje poprawny plik widoku tabletu (PASS)")
+
+    # Test get_info()
+    data = await get_info()
+    assert "local_ip" in data
+    assert "tablet_url" in data
+    assert "/tablet" in data["tablet_url"]
+    print("✓ Test 7: Endpoint /api/info zwraca poprawne dane sieciowe (PASS)")
+
 def main():
     print("Uruchamianie testów weryfikacyjnych...")
     test_intent_analyzer()
     asyncio.run(test_audio_engine())
+    asyncio.run(test_api_endpoints())
     print("\n🎉 Wszystkie testy przeszły pomyślnie!")
 
 if __name__ == "__main__":

@@ -43,11 +43,23 @@ Ciągłe manualne podsłuchiwanie (PFL/Solo) każdego z kilkunastu torów bywa m
                       ┌────────────────────────────────────────┐
                       │    Pulpit Realizatora (HTML/CSS/JS)    │
                       │ ────────────────────────────────────── │
-                      │  • Ciemny panel sceniczny (Dark-Mode)  │
-                      │  • Dynamiczne kafelki kanałów muzyków  │
-                      │  • Dziennik zgłoszeń z priorytetami    │
+                      │  • Ciemny panel FOH na MacBooku (/)   │
+                      │  • Krosownica audio (Patchbay)         │
+                      │  • Dynamiczne kafelki kanałów          │
                       │  • Obsługa mikrofonu na żywo (Web Mic) │
-                      │  • Szybkie presety testowe 1-Click     │
+                      └──────────────────┬─────────────────────┘
+                                         │  WebSocket Sync
+                                         ▼
+                      ┌────────────────────────────────────────┐
+                      │  Zdalny Podgląd: Tablet & Telefon      │
+                      │  (Dedykowany URL: /tablet)             │
+                      │ ────────────────────────────────────── │
+                      │  • Czysty podgląd sceny bez zbędnych   │
+                      │    paneli konfiguracyjnych             │
+                      │  • Duże dotykowe przyciski:            │
+                      │    „OZNACZ JAKO ZROBIONE”              │
+                      │  • Natychmiastowa synchronizacja       │
+                      │    z MacBookiem realizatora            │
                       └────────────────────────────────────────┘
 ```
 
@@ -93,6 +105,7 @@ Po uruchomieniu serwer wyświetli adresy:
 * **Wsparcie dla Mikrofonu na Żywo (Web Speech API):** Wystarczy kliknąć przycisk *„Mikrofon na żywo”* w przeglądarce i powiedzieć prośbę w języku polskim – system natychmiast ją przetworzy i wyświetli na pulpicie.
 * **Panel Testów Scenicznych (1-Click Presets):** Pozwala na błyskawiczne zaprezentowanie działania systemu bez podłączania fizycznej konsolety koncertowej.
 * **Obsługa potknięć / Oznaczanie zgłoszeń:** Przycisk *„Oznacz jako zrobione”* pozwala realizatorowi płynnie czyścić kolejkę wykonanych zadań.
+* **Dedykowany Widok Tabletu / Smartfona (`/tablet`):** Zoptymalizowany pod dotyk interfejs dla urządzeń mobilnych – pozwala realizatorowi lub asystentowi na scenie wyłącznie podglądać bieżące potrzeby muzyków i błyskawicznie odznaczać wykonane zadania jednym tapnięciem palca, bez zbędnych kontrolek miksera.
 
 ---
 

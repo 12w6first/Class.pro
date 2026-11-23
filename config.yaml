@@ -3,10 +3,10 @@ server:
   port: 8000
   title: AI Live Monitor Assistant
 stage:
-  default_device: Mikrofon (MacBook Pro)
+  default_device: Mikrofon wbudowany (MacBook Pro)
   channels:
   - id: 1
-    name: Wokal Główny
+    name: JANEK
     role: Lead Vocal
     hardware_channel: 1
     color: '#3b82f6'

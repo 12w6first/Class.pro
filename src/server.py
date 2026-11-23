@@ -1,10 +1,21 @@
 import json
+import socket
 from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from src.audio_engine import AudioEngine
 from src.models import SimulateRequest, SpeechInput, ResolveRequest, SaveRoutingRequest
+
+def get_local_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
 
 app = FastAPI(title="AI Live Monitor Assistant", version="1.0.0")
 engine = AudioEngine()
@@ -28,6 +39,20 @@ engine.subscribe(ws_broadcast)
 @app.get("/")
 async def get_index():
     return FileResponse("static/index.html")
+
+@app.get("/tablet")
+async def get_tablet():
+    return FileResponse("static/tablet.html")
+
+@app.get("/api/info")
+async def get_info():
+    ip = get_local_ip()
+    port = 8000
+    return {
+        "local_ip": ip,
+        "port": port,
+        "tablet_url": f"http://{ip}:{port}/tablet"
+    }
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
