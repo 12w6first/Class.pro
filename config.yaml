@@ -3,7 +3,7 @@ server:
   port: 8000
   title: AI Live Monitor Assistant
 stage:
-  default_device: Mikrofon wbudowany (MacBook Pro)
+  default_device: Yeti Stereo Microphone
   channels:
   - id: 1
     name: JANEK
@@ -14,7 +14,7 @@ stage:
   - id: 2
     name: Chórek / Wokal 2
     role: Backing Vocal
-    hardware_channel: 1
+    hardware_channel: 2
     color: '#8b5cf6'
     active: true
   - id: 3
