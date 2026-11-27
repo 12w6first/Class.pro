@@ -41,10 +41,10 @@ async def test_audio_engine():
     assert engine.channels[3].active_requests_count == 0
     print("✓ Test 4: AudioEngine lifecycle & resolve (PASS)")
 
-    # Test 5: Wykrywanie urządzeń i routing
+    # Test 5: Wykrywanie urządzeń i routing (zwraca listę realnie podpiętych wejść CoreAudio)
     devices = engine.detect_audio_devices()
-    assert len(devices) > 0
-    print(f"✓ Test 5: Wykryto {len(devices)} urządzeń audio (PASS)")
+    assert isinstance(devices, list)
+    print(f"✓ Test 5: Wykryto {len(devices)} podpiętych urządzeń audio (PASS)")
 
 async def test_api_endpoints():
     from src.server import get_tablet, get_info

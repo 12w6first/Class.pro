@@ -1,73 +1,50 @@
 <!DOCTYPE html>
 <html lang="pl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Live Monitor | Podgląd Sceny (Tablet & Mobile)</title>
-    <link rel="stylesheet" href="/static/tablet.css">
+    <title>AI Live Monitor • Podgląd Sceny</title>
+    <link rel="stylesheet" href="/static/tablet.css?v=oled5">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&family=Space+Grotesk:wght@600;700&display=swap"
+        rel="stylesheet">
 </head>
-<body class="stage-dark">
-    <!-- Tablet Header -->
+
+<body class="stage-oled">
+    <div id="urgent-flash-overlay" class="urgent-flash-overlay" aria-hidden="true"></div>
+    <!-- Tablet OLED Header -->
     <header class="tablet-nav">
         <div class="nav-brand">
-            <div class="pulse-indicator online" id="ws-indicator"></div>
+            <div class="pulse-indicator" id="ws-indicator"></div>
             <div>
-                <h1>PODGLĄD SCENY • MONITOR</h1>
-                <span class="host-info" id="ws-status">POŁĄCZONO Z MACBOOKIEM</span>
+                <h1>AI LIVE MONITOR</h1>
+                <span class="host-info" id="ws-status">ŁĄCZENIE...</span>
             </div>
         </div>
 
         <div class="nav-stats">
-            <div class="stat-pill" id="pending-counter">
-                <span class="pill-number" id="pending-count">0</span>
-                <span class="pill-label">DO ZROBIENIA</span>
+            <div class="queue-filters">
+                <button class="filter-btn active" data-view="stage">Tory na żywo</button>
+                <button class="filter-btn" data-view="foh">Dla realizatora</button>
+                <button class="filter-btn" data-view="history">Historia</button>
             </div>
             <div class="clock" id="tablet-clock">--:--:--</div>
         </div>
     </header>
 
-    <!-- Stage Channels Strip (Kompaktowy podgląd muzyków na scenie) -->
-    <section class="channels-strip-section">
-        <div class="strip-header">
-            <span>STAN MUZYKÓW NA SCENIE:</span>
-        </div>
-        <div class="channels-strip" id="tablet-channels-strip">
-            <!-- Dynamicznie generowane mini-kafelki muzyków -->
-        </div>
-    </section>
-
-    <!-- Main Content: Action Queue (Zadania do zrobienia) -->
+    <!-- Main Pure Read-Only Live Speech Monitor -->
     <main class="tablet-main">
-        <div class="queue-header">
-            <h2>PROŚBY I ALERTY MUZYKÓW</h2>
-            <div class="queue-filters">
-                <button class="filter-btn active" data-filter="pending">Do zrobienia</button>
-                <button class="filter-btn" data-filter="urgent">⚠️ Pilne</button>
-                <button class="filter-btn" data-filter="all">Wszystkie</button>
-                <button class="filter-btn" data-filter="resolved">Załatwione</button>
-            </div>
-        </div>
+        <!-- View 1: Live Stage Channels (default) -->
+        <section id="tablet-stage-view" class="tablet-stage-grid"></section>
 
-        <div class="action-cards-container" id="tablet-cards-container">
-            <!-- Dynamicznie generowane karty dotykowe -->
-            <div class="tablet-empty-state" id="tablet-empty">
-                <div class="empty-icon">✓</div>
-                <h3>Wszystko na bieżąco!</h3>
-                <p>Brak oczekujących próśb od wokalistów i muzyków.</p>
-                <small>Nasłuch na żywo z MacBooka jest aktywny...</small>
-            </div>
-        </div>
+        <!-- View 2/3: Chronological Speech Stream / Engineer Highlights -->
+        <section id="tablet-feed-view" class="action-cards-container hidden"></section>
     </main>
 
-    <!-- Footer Status -->
-    <footer class="tablet-footer">
-        <span>Tryb: <strong>Zdalny Podgląd & Odznaczanie Zadań</strong></span>
-        <span>Synchronizacja: <strong>WebSocket Real-Time</strong></span>
-    </footer>
-
-    <script src="/static/tablet.js"></script>
+    <script src="/static/tablet.js?v=oled5"></script>
 </body>
+
 </html>

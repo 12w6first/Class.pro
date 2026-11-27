@@ -3,7 +3,7 @@ server:
   port: 8000
   title: AI Live Monitor Assistant
 stage:
-  default_device: Yeti Stereo Microphone
+  default_device: Mikrofon (MacBook Pro)
   channels:
   - id: 1
     name: JANEK
@@ -14,33 +14,42 @@ stage:
   - id: 2
     name: Chórek / Wokal 2
     role: Backing Vocal
-    hardware_channel: 2
+    hardware_channel: 1
     color: '#8b5cf6'
     active: true
   - id: 3
     name: Perkusista
     role: Drums & Talkback
-    hardware_channel: 3
+    hardware_channel: 1
     color: '#ef4444'
     active: true
   - id: 4
     name: Basista
     role: Bass Guitar
-    hardware_channel: 4
+    hardware_channel: 1
     color: '#10b981'
     active: true
   - id: 5
     name: Gitarzysta
     role: Electric Guitar
-    hardware_channel: 5
+    hardware_channel: 1
     color: '#f59e0b'
     active: true
   - id: 6
     name: Klawisze
     role: Keyboards & Synth
-    hardware_channel: 6
+    hardware_channel: 1
     color: '#06b6d4'
+    active: true
+  - id: 7
+    name: Nowy Muzyk (CH 7)
+    role: Instrument / Wokal
+    hardware_channel: 7
+    color: '#f59e0b'
     active: true
 engine:
   mode: hybrid
   default_priority: normal
+  whisper_model: medium
+  whisper_language: pl
+  vad_threshold_db: -38.0

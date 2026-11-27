@@ -1,39 +1,49 @@
 import os
-import yaml
-import asyncio
-from typing import Dict, List, Optional, Callable, Any
-from src.models import ChannelInfo, StageMessage, IntentResult
-from src.intent_analyzer import IntentAnalyzer
-
-import os
+import json
 import yaml
 import asyncio
 import subprocess
-import re
 from typing import Dict, List, Optional, Callable, Any
 from src.models import ChannelInfo, StageMessage, IntentResult, AudioDeviceItem, ChannelRoutingUpdate
 from src.intent_analyzer import IntentAnalyzer
+from src.multichannel_stt import MultiChannelSTTEngine
 
 class AudioEngine:
     def __init__(self, config_path: str = "config.yaml"):
         self.config_path = config_path
         self.default_device: str = "Mikrofon (MacBook Pro)"
+        self.whisper_model: str = "medium"
+        self.whisper_language: str = "pl"
+        self.vad_threshold_db: float = -38.0
         self.channels: Dict[int, ChannelInfo] = {}
         self.messages: List[StageMessage] = []
         self.analyzer = IntentAnalyzer()
         self.subscribers: List[Callable[[Dict[str, Any]], Any]] = []
         self.load_config()
+        self.stt = MultiChannelSTTEngine(
+            model_name=self.whisper_model,
+            language=self.whisper_language,
+            vad_threshold_db=self.vad_threshold_db,
+            on_transcription=self.process_utterance,
+            on_event=self.broadcast,
+        )
+        self.stt.sync_channels(self.channels)
 
     def load_config(self):
         if not os.path.exists(self.config_path):
             return
 
         with open(self.config_path, "r", encoding="utf-8") as f:
-            cfg = yaml.safe_load(f)
+            cfg = yaml.safe_load(f) or {}
 
         stage_cfg = cfg.get("stage", {})
         self.default_device = stage_cfg.get("default_device", "Mikrofon (MacBook Pro)")
         stage_channels = stage_cfg.get("channels", [])
+
+        engine_cfg = cfg.get("engine", {})
+        self.whisper_model = engine_cfg.get("whisper_model", "medium")
+        self.whisper_language = engine_cfg.get("whisper_language", "pl")
+        self.vad_threshold_db = float(engine_cfg.get("vad_threshold_db", -38.0))
 
         self.channels.clear()
         for ch in stage_channels:
@@ -49,15 +59,17 @@ class AudioEngine:
             )
 
     def save_config(self):
-        """Zapisuje bieżącą krosownicę i kanały do config.yaml"""
+        """Zapisuje bieżącą krosownicę, kanały oraz ustawienia silnika (GATE, Whisper) do config.yaml"""
         if not os.path.exists(self.config_path):
-            return
-
-        with open(self.config_path, "r", encoding="utf-8") as f:
-            cfg = yaml.safe_load(f) or {}
+            cfg = {}
+        else:
+            with open(self.config_path, "r", encoding="utf-8") as f:
+                cfg = yaml.safe_load(f) or {}
 
         if "stage" not in cfg:
             cfg["stage"] = {}
+        if "engine" not in cfg:
+            cfg["engine"] = {}
 
         cfg["stage"]["default_device"] = self.default_device
         cfg["stage"]["channels"] = [
@@ -71,80 +83,181 @@ class AudioEngine:
             }
             for ch in self.channels.values()
         ]
+        cfg["engine"]["whisper_model"] = self.whisper_model
+        cfg["engine"]["whisper_language"] = self.whisper_language
+        cfg["engine"]["vad_threshold_db"] = round(float(self.vad_threshold_db), 1)
 
         with open(self.config_path, "w", encoding="utf-8") as f:
             yaml.safe_dump(cfg, f, allow_unicode=True, sort_keys=False)
 
+    # ==================== Zarządzanie Scenami / Presetami Krosownicy ====================
+
+    def _read_raw_config(self) -> Dict[str, Any]:
+        if not os.path.exists(self.config_path):
+            return {}
+        with open(self.config_path, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f) or {}
+
+    def _write_raw_config(self, cfg: Dict[str, Any]):
+        with open(self.config_path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(cfg, f, allow_unicode=True, sort_keys=False)
+
+    def list_scenes(self) -> List[Dict[str, Any]]:
+        cfg = self._read_raw_config()
+        scenes_map = cfg.get("scenes", {}) or {}
+        result = []
+        for name, data in scenes_map.items():
+            result.append({
+                "name": name,
+                "audio_device": data.get("audio_device", ""),
+                "channels_count": len(data.get("channels", [])),
+                "channels": data.get("channels", []),
+            })
+        return result
+
+    def save_scene(self, name: str, audio_device: str, channels_data: List[ChannelRoutingUpdate]) -> List[Dict[str, Any]]:
+        clean_name = name.strip()
+        if not clean_name:
+            raise ValueError("Nazwa sceny nie może być pusta.")
+        cfg = self._read_raw_config()
+        if "scenes" not in cfg or not isinstance(cfg["scenes"], dict):
+            cfg["scenes"] = {}
+        cfg["scenes"][clean_name] = {
+            "audio_device": audio_device,
+            "channels": [
+                {
+                    "id": ch.id,
+                    "name": ch.name,
+                    "role": ch.role,
+                    "hardware_channel": ch.hardware_channel,
+                    "color": ch.color,
+                    "active": ch.active,
+                }
+                for ch in channels_data
+            ],
+        }
+        self._write_raw_config(cfg)
+        return self.list_scenes()
+
+    async def load_scene(self, name: str) -> Dict[str, Any]:
+        cfg = self._read_raw_config()
+        scenes_map = cfg.get("scenes", {}) or {}
+        scene = scenes_map.get(name)
+        if not scene:
+            raise KeyError(f"Scena '{name}' nie istnieje.")
+        ch_updates = [
+            ChannelRoutingUpdate(
+                id=int(ch["id"]),
+                name=str(ch["name"]),
+                role=str(ch.get("role", "Wykonawca")),
+                hardware_channel=int(ch.get("hardware_channel", ch["id"])),
+                color=str(ch.get("color", "#3b82f6")),
+                active=bool(ch.get("active", True)),
+            )
+            for ch in scene.get("channels", [])
+        ]
+        device = str(scene.get("audio_device") or self.default_device)
+        await self.update_routing(device, ch_updates)
+        return {
+            "name": name,
+            "default_device": self.default_device,
+            "channels": [c.model_dump() for c in self.channels.values()],
+        }
+
+    def delete_scene(self, name: str) -> List[Dict[str, Any]]:
+        cfg = self._read_raw_config()
+        scenes_map = cfg.get("scenes", {}) or {}
+        if name in scenes_map:
+            del scenes_map[name]
+            cfg["scenes"] = scenes_map
+            self._write_raw_config(cfg)
+        return self.list_scenes()
+
     def detect_audio_devices(self) -> List[AudioDeviceItem]:
         """
-        Wykrywa urządzenia audio wejściowe w systemie macOS (CoreAudio)
-        oraz dodaje standardowe interfejsy mikserów koncertowych.
-        Zawsze zwraca co najmniej mikrofon MacBooka oraz popularne interfejsy cyfrowe.
+        Wykrywa WYŁĄCZNIE realnie podłączone urządzenia wejściowe audio:
+        1) PortAudio/CoreAudio przez sounddevice (wspiera hot-plug USB i dokładną liczbę kanałów)
+        2) Fallback na `system_profiler SPAudioDataType -json`.
         """
-        devices: List[AudioDeviceItem] = []
+        # 1. PortAudio (sounddevice)
+        pa_devices = self.stt.query_connected_input_devices() if hasattr(self, "stt") else []
+        if pa_devices:
+            return [
+                AudioDeviceItem(
+                    name=d["name"],
+                    channels=int(d["channels"]),
+                    is_default=bool(d["is_default"]),
+                )
+                for d in pa_devices
+            ]
 
+        # 2. Fallback: system_profiler JSON
+        devices: List[AudioDeviceItem] = []
         try:
             res = subprocess.run(
-                ["system_profiler", "SPAudioDataType"],
+                ["system_profiler", "SPAudioDataType", "-json"],
                 capture_output=True,
                 text=True,
                 timeout=5
             )
-            output = res.stdout
+            if res.returncode == 0 and res.stdout.strip():
+                data = json.loads(res.stdout)
+                for section in data.get("SPAudioDataType", []):
+                    for item in section.get("_items", []):
+                        in_channels = item.get("coreaudio_device_input")
+                        if not in_channels or int(in_channels) <= 0:
+                            continue
 
-            # Parsuj bloki urządzeń – każde ma wcięcie 8 spacji i dwukropek
-            device_blocks = re.split(r"\n(?=\s{8}\S)", output)
-            for block in device_blocks:
-                name_match = re.match(r"\s{8}([^\n:]+):", block)
-                if not name_match:
-                    continue
-                name_clean = name_match.group(1).strip()
+                        name_clean = str(item.get("_name", "")).strip()
+                        if not name_clean:
+                            continue
 
-                # Pomiń czysto wyjściowe (output-only) urządzenia
-                if re.search(r"\boutput\b", name_clean, re.IGNORECASE) and \
-                   not re.search(r"\binput\b", name_clean, re.IGNORECASE):
-                    continue
-
-                in_ch_match = re.search(r"Input Channels:\s*(\d+)", block)
-                is_default = "Default Input Device: Yes" in block
-
-                if in_ch_match:
-                    ch_count = int(in_ch_match.group(1))
-                    devices.append(AudioDeviceItem(
-                        name=name_clean,
-                        channels=ch_count,
-                        is_default=is_default
-                    ))
+                        is_default = item.get("coreaudio_default_audio_input_device") == "spaudio_yes"
+                        devices.append(AudioDeviceItem(
+                            name=name_clean,
+                            channels=int(in_channels),
+                            is_default=is_default
+                        ))
         except Exception as e:
             print(f"[Device Detection Warning] {e}")
 
-        # Zawsze dodaj mikrofon wbudowany MacBooka jeśli nie wykryto
-        macbook_mic_names = {"MacBook", "Built-in", "Wbudowany", "Mikrofon (MacBook"}
-        has_builtin = any(any(k in d.name for k in macbook_mic_names) for d in devices)
-        if not has_builtin:
-            devices.insert(0, AudioDeviceItem(
-                name="Mikrofon wbudowany (MacBook Pro)",
-                channels=1,
-                is_default=len(devices) == 0
-            ))
-
-        # Popularne interfejsy cyfrowych konsolet koncertowych
-        known_stage = [
-            AudioDeviceItem(name="Midas MR18 / XR18 USB Audio (18 ch)", channels=18, is_default=False),
-            AudioDeviceItem(name="USB Audio CODEC (Behringer X32 / Midas M32 - 32ch)", channels=32, is_default=False),
-            AudioDeviceItem(name="Dante Virtual Soundcard (64ch)", channels=64, is_default=False),
-            AudioDeviceItem(name="Allen & Heath USB Audio (SQ / Qu - 32ch)", channels=32, is_default=False),
-            AudioDeviceItem(name="Focusrite Scarlett USB Audio (2ch)", channels=2, is_default=False),
-            AudioDeviceItem(name="PreSonus StudioLive USB Audio (32ch)", channels=32, is_default=False),
-        ]
-        existing_names = {d.name for d in devices}
-        for kv in known_stage:
-            if kv.name not in existing_names:
-                devices.append(kv)
-
+        devices.sort(key=lambda d: (not d.is_default, d.name.lower()))
         return devices
 
+    async def start_listening(self, device_name: Optional[str] = None, vad_threshold_db: Optional[float] = None) -> Dict[str, Any]:
+        target_device = device_name or self.default_device
+        if device_name:
+            self.default_device = device_name
+        return await self.stt.start(
+            channels=self.channels,
+            device_name=target_device,
+            vad_threshold_db=vad_threshold_db,
+        )
+
+    async def stop_listening(self) -> Dict[str, Any]:
+        return await self.stt.stop()
+
+    def get_listen_status(self) -> Dict[str, Any]:
+        return self.stt.get_status()
+
+    def set_vad_threshold(self, threshold_db: float) -> Dict[str, Any]:
+        self.vad_threshold_db = float(threshold_db)
+        self.stt.set_vad_threshold(threshold_db)
+        self.save_config()
+        return self.stt.get_status()
+
+    def set_whisper_model(self, model_name: str) -> Dict[str, Any]:
+        self.stt.set_model_name(model_name)
+        self.whisper_model = self.stt.model_name
+        self.save_config()
+        return self.stt.get_status()
+
+    def set_channel_muted(self, channel_id: int, muted: bool) -> Dict[str, Any]:
+        self.stt.set_channel_muted(channel_id, muted)
+        return self.stt.get_status()
+
     async def update_routing(self, default_device: str, channels_data: List[ChannelRoutingUpdate]):
+        prev_device = self.default_device
         self.default_device = default_device
 
         new_channels: Dict[int, ChannelInfo] = {}
@@ -165,6 +278,13 @@ class AudioEngine:
 
         self.channels = new_channels
         self.save_config()
+        self.stt.sync_channels(self.channels)
+
+        # Jeśli trwa nasłuch i zmieniono urządzenie wejściowe, przełącz strumień automatycznie
+        if self.stt.get_status().get("listening") and prev_device != default_device:
+            await self.stt.start(channels=self.channels, device_name=default_device)
+        else:
+            await self.broadcast("listen_status", self.stt.get_status())
 
         # Wyślij powiadomienie do podłączonych klientów
         await self.broadcast("channel_update", [ch.model_dump() for ch in self.channels.values()])

@@ -5,7 +5,18 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from src.audio_engine import AudioEngine
-from src.models import SimulateRequest, SpeechInput, ResolveRequest, SaveRoutingRequest
+from src.models import (
+    SimulateRequest,
+    SpeechInput,
+    ResolveRequest,
+    SaveRoutingRequest,
+    StartListenRequest,
+    VadUpdateRequest,
+    ChannelMuteRequest,
+    ModelChangeRequest,
+    SaveSceneRequest,
+    LoadSceneRequest,
+)
 
 def get_local_ip():
     try:
@@ -20,10 +31,34 @@ def get_local_ip():
 app = FastAPI(title="AI Live Monitor Assistant", version="1.0.0")
 engine = AudioEngine()
 
+@app.middleware("http")
+async def disable_static_cache(request, call_next):
+    response = await call_next(request)
+    if request.url.path in ("/", "/tablet") or request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 # Statyczne pliki (HTML/CSS/JS)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 active_connections: List[WebSocket] = []
+app.state.port = 8000
+
+async def close_all_websockets():
+    """Rozłącza wszystkich klientów (pulpit + tablety) przy zamykaniu aplikacji."""
+    for ws in list(active_connections):
+        try:
+            await ws.close(code=1001, reason="Aplikacja AI Live Monitor została zamknięta")
+        except Exception:
+            pass
+    active_connections.clear()
+
+@app.on_event("shutdown")
+async def on_server_shutdown():
+    engine.stt.force_shutdown()
+    await close_all_websockets()
 
 async def ws_broadcast(payload: dict):
     data_str = json.dumps(payload, ensure_ascii=False)
@@ -47,7 +82,7 @@ async def get_tablet():
 @app.get("/api/info")
 async def get_info():
     ip = get_local_ip()
-    port = 8000
+    port = getattr(app.state, "port", 8000)
     return {
         "local_ip": ip,
         "port": port,
@@ -64,7 +99,8 @@ async def websocket_endpoint(websocket: WebSocket):
             "type": "init",
             "data": {
                 "channels": [ch.model_dump() for ch in engine.channels.values()],
-                "messages": [msg.model_dump() for msg in engine.messages[:30]]
+                "messages": [msg.model_dump() for msg in engine.messages[:30]],
+                "listen_status": engine.get_listen_status(),
             }
         }
         await websocket.send_text(json.dumps(initial_state, ensure_ascii=False))
@@ -86,6 +122,63 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.get("/api/audio-devices")
 async def get_audio_devices():
     return [d.model_dump() for d in engine.detect_audio_devices()]
+
+@app.get("/api/listen/status")
+async def get_listen_status():
+    return engine.get_listen_status()
+
+@app.post("/api/listen/start")
+async def start_listening(req: StartListenRequest = StartListenRequest()):
+    return await engine.start_listening(
+        device_name=req.device_name,
+        vad_threshold_db=req.vad_threshold_db,
+    )
+
+@app.post("/api/listen/stop")
+async def stop_listening():
+    return await engine.stop_listening()
+
+@app.post("/api/listen/vad")
+async def update_vad(req: VadUpdateRequest):
+    return engine.set_vad_threshold(req.threshold_db)
+
+@app.post("/api/listen/mute")
+async def mute_channel(req: ChannelMuteRequest):
+    return engine.set_channel_muted(req.channel_id, req.muted)
+
+@app.post("/api/listen/model")
+async def change_whisper_model(req: ModelChangeRequest):
+    try:
+        status = engine.set_whisper_model(req.model_name)
+        await engine.broadcast("listen_status", status)
+        return status
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/scenes")
+async def get_scenes():
+    return engine.list_scenes()
+
+@app.post("/api/scenes/save")
+async def save_scene(req: SaveSceneRequest):
+    try:
+        scenes = engine.save_scene(req.name, req.audio_device, req.channels)
+        return {"status": "ok", "scenes": scenes}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/scenes/load")
+async def load_scene(req: LoadSceneRequest):
+    try:
+        result = await engine.load_scene(req.name)
+        return {"status": "ok", **result}
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@app.delete("/api/scenes/{scene_name}")
+async def delete_scene(scene_name: str):
+    scenes = engine.delete_scene(scene_name)
+    return {"status": "ok", "scenes": scenes}
 
 @app.get("/api/config/routing")
 async def get_routing():

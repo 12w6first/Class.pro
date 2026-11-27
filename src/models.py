@@ -64,3 +64,25 @@ class SpeechInput(BaseModel):
 
 class ResolveRequest(BaseModel):
     message_id: str
+
+class StartListenRequest(BaseModel):
+    device_name: Optional[str] = None
+    vad_threshold_db: Optional[float] = None
+
+class VadUpdateRequest(BaseModel):
+    threshold_db: float
+
+class ChannelMuteRequest(BaseModel):
+    channel_id: int
+    muted: bool
+
+class ModelChangeRequest(BaseModel):
+    model_name: str  # base | small | medium
+
+class SaveSceneRequest(BaseModel):
+    name: str
+    audio_device: str
+    channels: List[ChannelRoutingUpdate]
+
+class LoadSceneRequest(BaseModel):
+    name: str
